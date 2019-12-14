@@ -1,0 +1,238 @@
+import sys, random
+import sqlite3
+#from designer import Ui_Form
+from PyQt5 import QtCore, QtMultimedia
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QGridLayout
+
+from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5.QtWidgets import QApplication, QPushButton, QMainWindow, QScrollArea, QFormLayout, QGroupBox, QVBoxLayout
+import os
+
+class Ui_Form(object):
+    def setupUi(self, Form):
+        self.z = -1
+        self.form = Form
+        #считываем каталог данных
+        files = os.listdir('/Users/Виталик/Music')
+
+        #подключаем sqlite
+        db = sqlite3.connect('music.db')
+        cur = db.cursor()
+        self.resultMusic = cur.execute("""SELECT * FROM Music""").fetchall()
+        cur.close()
+
+        self.music_names = []
+        for i in range(len(self.resultMusic)):
+            self.music_names.append(self.resultMusic[i][1])
+
+        Form.setObjectName("Form")
+        Form.resize(1000, 900)
+
+        self.mix = QtWidgets.QPushButton(Form)
+        self.mix.setGeometry(QtCore.QRect(600, 150, 400, 50))
+        self.mix.setObjectName("shape")
+
+        #создаем плейлист сверху
+        self.Playlist(Form)
+
+        #создаем список музыки справа
+        self.fromUI = 1
+        self.Music_box()
+
+
+        #реализация основных кнопок
+        self.pause = QtWidgets.QPushButton(Form)
+        self.pause.setGeometry(QtCore.QRect(220, 560, 93, 81))
+        self.pause.setObjectName("pause")
+        self.start = QtWidgets.QPushButton(Form)
+        self.start.setGeometry(QtCore.QRect(220, 460, 93, 81))
+        self.start.setObjectName("start")
+        self.next = QtWidgets.QPushButton(Form)
+        self.next.setGeometry(QtCore.QRect(350, 520, 93, 71))
+        self.next.setObjectName("next")
+        self.prev = QtWidgets.QPushButton(Form)
+        self.prev.setGeometry(QtCore.QRect(90, 520, 93, 71))
+        self.prev.setObjectName("prev")
+        self.label = QtWidgets.QLabel(Form)
+        self.label.setGeometry(QtCore.QRect(270, 180, 1000, 150))
+        font = QtGui.QFont()
+        font.setFamily("Bauhaus 93")
+        font.setPointSize(16)
+        self.label.setFont(font)
+        self.label.setObjectName("label")
+        self.verticalSlider = QtWidgets.QSlider(Form)
+        self.verticalSlider.setGeometry(QtCore.QRect(500, 460, 21, 191))
+        self.verticalSlider.setOrientation(QtCore.Qt.Vertical)
+        self.verticalSlider.setObjectName("verticalSlider")
+
+        self.retranslateUi(Form)
+        QtCore.QMetaObject.connectSlotsByName(Form)
+
+    def retranslateUi(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        Form.setWindowTitle(_translate("Form", "Form"))
+        self.mix.setText(_translate("Form", "перемешать"))
+        self.pause.setText(_translate("Form", "пауза"))
+        self.start.setText(_translate("Form", "старт"))
+        self.next.setText(_translate("Form", "следующая"))
+        self.prev.setText(_translate("Form", "предыдущая"))
+        self.label.setText(_translate("Form", "name"))
+
+    def Music_box(self):
+        self.z += 1
+        _translate = QtCore.QCoreApplication.translate
+        sender = self.sender()
+        self.music = []
+        formLayout = QFormLayout()
+        groupBox = QGroupBox()
+        if self.fromUI or sender == self.playlist[0]:
+            for i in range(len(list(self.music_names))):
+                self.music.append(QtWidgets.QPushButton(self.form))
+                self.music[i].setObjectName(str(self.music_names[i]))
+                self.music[i].setText(_translate("Form", self.music_names[i]))
+                self.music[i].setFixedHeight(50)
+                formLayout.addRow(self.music[i])
+            self.fromUI = 0
+        else:
+            for i in range(len(list(self.playlist))):
+                if sender == self.playlist[i]:
+                    genre = i
+            k = 0
+            for i in range(len(list(self.music_names))):
+                if self.resultMusic[i][3] == genre:
+                    self.music.append(QtWidgets.QPushButton(self.form))
+                    self.music[i - k].setObjectName(str(self.music_names[i]))
+                    self.music[i - k].setText(_translate("Form", self.music_names[i]))
+                    self.music[i - k].setFixedHeight(50)
+                    formLayout.addRow(self.music[i - k])
+                else:
+                    k += 1
+
+        groupBox.setLayout(formLayout)
+        self.scroll = QScrollArea(self.form)
+        self.scroll.setWidget(groupBox)
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setGeometry(600, 220, 400, 680)
+        layout = QVBoxLayout()
+        layout.addWidget(self.scroll)
+
+
+        if self.z:
+            self.setLayout(layout)
+            self.show()
+
+    def Playlist(self, Form):
+        _translate = QtCore.QCoreApplication.translate
+        self.playlist = []
+        formLayout1 = QGridLayout()
+        groupBox1 = QGroupBox()
+
+        db = sqlite3.connect('music.db')
+        cur = db.cursor()
+        self.resultPlaylist = cur.execute("""SELECT * FROM genres""").fetchall()
+        cur.close()
+        self.playlist.append(QtWidgets.QPushButton(Form))
+        self.playlist[0].setObjectName("все")
+        self.playlist[0].setText(_translate("Form", "все"))
+        self.playlist[0].setFixedHeight(90)
+        self.playlist[0].setFixedWidth(110)
+        formLayout1.addWidget(self.playlist[0], 0, 0)
+        for i in range(len(self.resultPlaylist)):
+            self.playlist.append(QtWidgets.QPushButton(Form))
+            self.playlist[i + 1].setObjectName(str(self.resultPlaylist[i][1]))
+            self.playlist[i + 1].setText(_translate("Form", self.resultPlaylist[i][1]))
+            self.playlist[i + 1].setFixedHeight(90)
+            self.playlist[i + 1].setFixedWidth(110)
+            formLayout1.addWidget(self.playlist[i + 1], 0, i + 1)
+
+        groupBox1.setLayout(formLayout1)
+        self.scroll = QScrollArea(Form)
+        self.scroll.setGeometry(QtCore.QRect(0, 0, 1000, 130))
+        self.scroll.setWidget(groupBox1)
+        self.scroll.setWidgetResizable(True)
+        layout1 = QVBoxLayout()
+        layout1.addWidget(self.scroll)
+
+
+class MyWidget(QWidget, Ui_Form):
+    def __init__(self):
+        self._translate = QtCore.QCoreApplication.translate
+        super().__init__()
+        self.setupUi(self)
+        self.song = 0 #у каждой песни свой номер
+        self.load_mp3('/Users/Виталик/Music/')
+        self.pause.clicked.connect(self.pauseMusic)
+        self.start.clicked.connect(self.playMusic)
+        self.next.clicked.connect(self.nextMusic)
+        self.prev.clicked.connect(self.prevMusic)
+        self.mix.clicked.connect(self.mixMusic)
+
+        #подключаем все кнопки музык
+        for i in range(len(list(self.music))):
+            self.music[i].clicked.connect(self.playMusic)
+
+        #подключаем все плейлисты
+        for i in range(len(list(self.playlist))):
+            self.playlist[i].clicked.connect(self.Music_box)
+
+    def playMusic(self):
+        sender = self.sender()
+        if sender != self.start:
+            self.player[self.song].stop()
+            self.song = self.music_names.index(sender.text())
+        self.player[self.song].play()
+        self.label.setGeometry(QtCore.QRect(270 - (len(self.music_names[self.song]) * 5), 180, 1000, 150))
+        self.label.setText(self._translate("Form", self.music_names[self.song]))
+
+    def pauseMusic(self):
+        self.player[self.song].pause()
+
+    def nextMusic(self):
+        self.player[self.song].stop()
+        self.song = (self.song + 1) % len(list(self.music))
+        self.player[self.song].play()
+        self.label.setGeometry(QtCore.QRect(270 - (len(self.music_names[self.song]) * 5), 180, 1000, 150))
+        self.label.setText(self._translate("Form", self.music_names[self.song]))
+
+    def prevMusic(self):
+        self.player[self.song].stop()
+        self.song = (self.song - 1) % len(list(self.music))
+        self.player[self.song].play()
+        self.label.setGeometry(QtCore.QRect(270 - (len(self.music_names[self.song]) * 5), 180, 1000, 150))
+        self.label.setText(self._translate("Form", self.music_names[self.song]))
+
+    def mixMusic(self):
+        a = [i for i in range(len(self.music_names))] #создаем новый порядок для песен
+        m1 = [] #создаем вспомогательные массивы для хранения предыдущих
+        m2 = []
+        self.player[self.song].stop()
+        random.shuffle(a)
+        #закидываем песни в спомогательные массивы
+        _translate = QtCore.QCoreApplication.translate
+        for i in range(len(a)):
+            m1.append(self.music_names[a[i]])
+            m2.append(self.player[a[i]])
+        self.music_names = []
+        self.player = []
+        #закидываем в основные массивы уже перемешанные песни
+        for i in range(len(a)):
+            self.music_names.append(m1[i])
+            self.player.append(m2[i])
+        self.song = 0
+        self.player[self.song].play()
+        self.label.setGeometry(QtCore.QRect(270 - (len(self.music_names[self.song]) * 5), 180, 1000, 150))
+        self.label.setText(self._translate("Form", self.music_names[self.song]))
+
+    def load_mp3(self, filename):
+        self.player = []
+        for i in range(len(list(self.music_names))):
+            media = QtCore.QUrl.fromLocalFile(filename + str(self.music_names[i]))
+            content = QtMultimedia.QMediaContent(media)
+            self.player.append(QtMultimedia.QMediaPlayer())
+            self.player[i].setMedia(content)
+
+
+app = QApplication(sys.argv)
+ex = MyWidget()
+ex.show()
+sys.exit(app.exec_())
